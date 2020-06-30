@@ -1,4 +1,5 @@
 export default class GameStateService {
+  
   constructor(storage) {
     this.storage = storage;
   }
