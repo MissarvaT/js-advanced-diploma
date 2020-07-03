@@ -1,18 +1,19 @@
+/* eslint-disable consistent-return */
 export function calcTileType(index, boardSize) {
   // TODO: write logic here
   while (index < boardSize ** 2) {
     if (index === 0) {
-      return 'top-left'
-    };
+      return 'top-left';
+    }
     if (index === 7) {
-      return 'top-right'
-    };
-    if (index > 0 && index < 7 ) {
-      return 'top'
-    };
+      return 'top-right';
+    }
+    if (index > 0 && index < 7) {
+      return 'top';
+    }
     if (index === 56) {
       return 'bottom-left';
-    } 
+    }
     if (index === 63) {
       return 'bottom-right';
     } if (index > 56 && index < 63) {
