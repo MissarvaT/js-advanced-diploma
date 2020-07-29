@@ -16,6 +16,7 @@ import Undead from './characters/Undead';
 import Vampire from './characters/Vampire';
 import { calcTileType } from './utils';
 import cellDeterminer from './cellDeterminer';
+import PositionedCharacter from './PositionedCharacter';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -31,18 +32,19 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    this.gamePlay.addCellEnterListeners(this.onCellEnter.bind(this));
-    this.gameplay.addCellClickListeners(this.onCellClick.bind(this));
-    this.gameplay.addcellLeaveListeners(this.onCellLeave.bind(this));
-    this.gameplay.addNewGameListener(this.onNewGameClick.bind(this));
-    this.gameplay.addSaveGameListener(this.onSaveGameClick.bind(this));
-    this.gameplay.addLoadGameListener(this.onLoadGameClick.bind(this));
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addNewGameListener(this.onNewGameClick.bind(this));
+    this.gamePlay.addSaveGameListener(this.onSaveGameClick.bind(this));
+    this.gamePlay.addLoadGameListener(this.onLoadGameClick.bind(this));
 
     this.gamePlay.drawUi('prairie');
     const computerTeam = generateTeam([Daemon, Undead, Vampire], 1, 2, this.gamePlay.cells);
     this.computerTeam = computerTeam;
     const playerTeam = generateTeam([Bowman, Swordsman], 1, 2, this.gamePlay.cells);
     this.playerTeam = playerTeam;
+    this.teams = [...this.computerTeam, ...this.playerTeam];
     this.gamePlay.redrawPositions(this.teams);
 
     this.gameState.activePlayer = 'player';
@@ -52,25 +54,31 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
-    if (this.gamePlay.cells[index].character instanceof Bowman
-      || this.gamePlay.cells[index].character instanceof Swordsman
-      || this.gamePlay.cells[index].character instanceof Magician) {
+
+    if (this.gamePlay.cells[index].firstChild !== null
+      && (this.gamePlay.cells[index].firstChild.classList.contains('bowman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('swordsman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('magician'))) {
       this.gamePlay.cells.forEach((cell) => cell.classList.remove(...Array.from(cell.classList)
         .filter((o) => o.startsWith('selected'))));
       this.gamePlay.selectCell(index);
       this.gameState.selectedCharacter = this.gamePlay.cells[index];
+    };
+    if (this.gameState.selectedCharacter === 0 
+      && this.gamePlay.cells[index].firstChild !== null
+      && (this.gamePlay.cells[index].firstChild.classList.contains('daemon')
+      || this.gamePlay.cells[index].firstChild.classList.contains('undead')
+      || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
+      alert('Невозможно выбрать персонажа!');
     }
-    if (this.gameState.selectedCharacter === 0 && (this.gamePlay.cells[index].character instanceof Daemon
-      || this.gamePlay.cells[index].character instanceof Undead
-      || this.gamePlay.cells[index].character instanceof Vampire)) {
-      this.gamePlay.showError('Невозможно выбрать персонажа!');
-    }
-    if (this.gameState.selectedCharacter !== 0 && !(this.gamePlay.cells[index].character instanceof Character)) {
+    if (this.gameState.selectedCharacter !== 0 && this.gamePlay.cells[index].firstChild === null) {
       this.move(index);
     }
-    if (this.gameState.selectedCharacter !== 0 && (this.gamePlay.cells[index].character instanceof Daemon
-      || this.gamePlay.cells[index].character instanceof Undead
-      || this.gamePlay.cells[index].character instanceof Vampire)) {
+    if (this.gameState.selectedCharacter !== 0 
+      && this.gamePlay.cells[index].firstChild !== null
+      && (this.gamePlay.cells[index].firstChild.classList.contains('daemon')
+      || this.gamePlay.cells[index].firstChild.classList.contains('undead')
+      || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
       this.attack(index);
     }
 
@@ -79,24 +87,31 @@ export default class GameController {
 
   onCellEnter(index) {
     // TODO: react to mouse enter
-    if (this.gamePlay.cells[index].character instanceof Character) {
-      const { character } = this.gamePlay.cells[index].character;
+    const positionedCharacter = this.teams.find((el) => el.position === index);
+    if (this.gamePlay.cells[index].firstChild !== null) {
+      const { character } = positionedCharacter;
       this.gamePlay.showCellTooltip(`\u{1F396}${character.level}\u{2694}${character.attack}\u{1F6E1}${character.defence}\u{2764}${character.health}`, index);
     }
 
     if (this.gameState.selectedCharacter !== 0 && this.gameState.activePlayer === 'player') {
-      const cellsForAttack = cellDeterminer(this.gameState.selectedCharacter.position, this.gameState.selectedCharacter.character.attackDistance, this.gamePlay.cells);
-      const cellsForMove = cellDeterminer(this.gameState.selectedCharacter.position, this.gameState.selectedCharacter.character.stepDistance, this.gamePlay.cells);
+      const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected-yellow'));
+      const i = this.gamePlay.cells.indexOf(selectedCell);
+      const character = this.teams.find((el) => el.position === i);
+      const cellsForAttack = cellDeterminer(character.position, character.character.attackDistance, this.gamePlay.cells);
+      const cellsForMove = cellDeterminer(character.position, character.character.stepDistance, this.gamePlay.cells);
       if (cellsForMove.includes(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
       }
-      const { character } = this.gamePlay.cells[index];
-      if (cellsForAttack.includes(index) && ((character instanceof Daemon) || (character instanceof Undead) || (character instanceof Vampire))) {
+
+      if (cellsForAttack.includes(index) && this.gamePlay.cells[index].firstChild !== null
+      && ((this.gamePlay.cells[index].firstChild.classList.includes('daemon'))
+      || (this.gamePlay.cells[index].firstChild.classList.includes('undead'))
+      || (this.gamePlay.cells[index].firstChild.classList.includes('vampire')))) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, 'red');
       }
-      if (!(cellsForMove.includes(index) && cellsForAttack.includes(index))) {
+      if (!(cellsForMove.includes(index) || cellsForAttack.includes(index))) {
         this.gamePlay.setCursor(cursors.notallowed);
       }
     }
@@ -105,16 +120,21 @@ export default class GameController {
   onCellLeave(index) {
     // TODO: react to mouse leave
     this.gamePlay.hideCellTooltip(index);
+    if (this.gamePlay.cells[index].classList.contains('selected-green')) {
+      this.gamePlay.cells[index].classList.remove('selected-green');
+    }
   }
 
   move(index) {
-    const character = this.gameState.selectedCharacter;
+    const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected'));
+    const i = this.gamePlay.cells.indexOf(selectedCell);
+    const character = this.teams.find((el) => el.position === i);
     const possibleSteps = cellDeterminer(character.position, character.character.stepDistance, this.gamePlay.cells);
     if (possibleSteps.includes(index)) {
       character.position = index;
       this.gamePlay.cells.forEach((cell) => cell.classList.remove(...Array.from(cell.classList)
         .filter((o) => o.startsWith('selected'))));
-      this.gamePlay.redrawPosition(this.teams);
+      this.gamePlay.redrawPositions(this.teams);
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {

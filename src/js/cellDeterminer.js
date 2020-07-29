@@ -14,39 +14,40 @@ export default function cellDeterminer(index, maxDistance, cells) {
   for (let i = maxDistance; i > 0; i -= 1) {
     possibleIndexes.push(index - (8 * i));
     possibleIndexes.push(index + (8 * i));
-
-    if (index - leftmostIndex < maxDistance) {
-      const j = index - leftmostIndex;
-      if (j !== 0) {
-        possibleIndexes.push(index - (9 * j));
-        possibleIndexes.push(index + (7 * j));
-        possibleIndexes.push(index - (1 * j));
-      }
-      possibleIndexes.push(index - (7 * i));
-      possibleIndexes.push(index + (9 * i));
-      possibleIndexes.push(index + (1 * i));
-    } else if (rightmostIndex - index < maxDistance) {
-      const j = rightmostIndex - index;
-      if (j !== 0) {
-        possibleIndexes.push(index - (7 * j));
-        possibleIndexes.push(index + (9 * j));
-        possibleIndexes.push(index + (1 * j));
-      }
+    possibleIndexes.push(index - (1 * i));
+    possibleIndexes.push(index + (1 * i));
+  }
+  if (index - leftmostIndex < maxDistance) {
+    const newDistance = index - leftmostIndex;
+    for (let i = newDistance; i > 0; i -= 1) {
       possibleIndexes.push(index - (9 * i));
       possibleIndexes.push(index + (7 * i));
-      possibleIndexes.push(index - (1 * i));
-    } else {
-      possibleIndexes.push(index + (1 * i));
-      possibleIndexes.push(index - (1 * i));
+    }
+    for (let i = maxDistance; i > 0; i -= 1) {
+      possibleIndexes.push(index - (7 * i));
+      possibleIndexes.push(index + (9 * i));
+    }
+  } else if (rightmostIndex - index < maxDistance) {
+    const newDistance = rightmostIndex - index;
+    for (let i = newDistance; i > 0; i -= 1) {
+      possibleIndexes.push(index - (7 * i));
+      possibleIndexes.push(index + (9 * i));
+    }
+    for (let i = maxDistance; i > 0; i -= 1) {
+      possibleIndexes.push(index - (9 * i));
+      possibleIndexes.push(index + (7 * i));
+    }
+  } else {
+    for (let i = maxDistance; i > 0; i -= 1) {
       possibleIndexes.push(index - (9 * i));
       possibleIndexes.push(index - (7 * i));
       possibleIndexes.push(index + (7 * i));
       possibleIndexes.push(index + (9 * i));
     }
-
-    possibleIndexes = possibleIndexes.filter((el) => el >= 0 && el < 64);
-    possibleIndexes = possibleIndexes.filter((el) => possibleIndexes.indexOf(el) >= leftmostIndex || possibleIndexes.indexOf(el) <= index - 7);
-    possibleIndexes = possibleIndexes.filter((el) => possibleIndexes.indexOf(el) <= rightmostIndex || possibleIndexes.indexOf(el) >= index + 7);
   }
+  possibleIndexes = possibleIndexes.filter((el) => el >= 0 && el < 64);
+  possibleIndexes = possibleIndexes.filter((el) => el >= leftmostIndex || el <= index - 7);
+  possibleIndexes = possibleIndexes.filter((el) => el <= rightmostIndex || el >= index + 7);
+
   return possibleIndexes;
 }
