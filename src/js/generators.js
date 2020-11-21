@@ -36,7 +36,7 @@ export function generateTeam(allowedTypes, maxLevel, characterCount, field) {
     const character = generator.next();
     characters.push(character.value);
   }
-  function getRandomCell() {
+  function getRandomCells() {
     const playersCellsIndexes = [];
 
     if (allowedTypes.includes(Bowman)
@@ -62,15 +62,20 @@ export function generateTeam(allowedTypes, maxLevel, characterCount, field) {
       max = Math.floor(max);
       return Math.floor(Math.random() * (max - min)) + min;
     }
-    const randomIndex = getRandom(0, playersCellsIndexes.length);
-    const fieldIndex = playersCellsIndexes[randomIndex];
-    return fieldIndex;
+    const fieldIndexes = new Set();
+    while (fieldIndexes.size < characterCount) {
+      const randomIndex = getRandom(0, playersCellsIndexes.length);
+      const fieldIndex = playersCellsIndexes[randomIndex];
+      fieldIndexes.add(fieldIndex);
+    }
+
+    return Array.from(fieldIndexes);
   }
 
   const positionedCharacters = [];
+  const indexes = getRandomCells();
   for (let i = 0; i < characters.length; i += 1) {
-    const index = getRandomCell();
-    const positionedCharacter = new PositionedCharacter(characters[i], index);
+    const positionedCharacter = new PositionedCharacter(characters[i], indexes[i]);
     positionedCharacters.push(positionedCharacter);
   }
   return positionedCharacters;

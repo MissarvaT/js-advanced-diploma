@@ -63,25 +63,24 @@ export default class GameController {
         .filter((o) => o.startsWith('selected'))));
       this.gamePlay.selectCell(index);
       this.gameState.selectedCharacter = this.gamePlay.cells[index];
-    };
-    if (this.gameState.selectedCharacter === 0 
+    }
+    else if (this.gameState.selectedCharacter === 0
       && this.gamePlay.cells[index].firstChild !== null
       && (this.gamePlay.cells[index].firstChild.classList.contains('daemon')
       || this.gamePlay.cells[index].firstChild.classList.contains('undead')
       || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
       alert('Невозможно выбрать персонажа!');
     }
-    if (this.gameState.selectedCharacter !== 0 && this.gamePlay.cells[index].firstChild === null) {
+    else if (this.gameState.selectedCharacter !== 0 && this.gamePlay.cells[index].firstChild === null) {
       this.move(index);
     }
-    if (this.gameState.selectedCharacter !== 0 
+    else if (this.gameState.selectedCharacter !== 0
       && this.gamePlay.cells[index].firstChild !== null
       && (this.gamePlay.cells[index].firstChild.classList.contains('daemon')
       || this.gamePlay.cells[index].firstChild.classList.contains('undead')
       || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
       this.attack(index);
     }
-
     this.endCheck();
   }
 
@@ -93,7 +92,7 @@ export default class GameController {
       this.gamePlay.showCellTooltip(`\u{1F396}${character.level}\u{2694}${character.attack}\u{1F6E1}${character.defence}\u{2764}${character.health}`, index);
     }
 
-    if (this.gameState.selectedCharacter !== 0 && this.gameState.activePlayer === 'player') {
+    if (this.gameState.selectedCharacter !== 0) {
       const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected-yellow'));
       const i = this.gamePlay.cells.indexOf(selectedCell);
       const character = this.teams.find((el) => el.position === i);
@@ -103,16 +102,21 @@ export default class GameController {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
       }
-
       if (cellsForAttack.includes(index) && this.gamePlay.cells[index].firstChild !== null
-      && ((this.gamePlay.cells[index].firstChild.classList.includes('daemon'))
-      || (this.gamePlay.cells[index].firstChild.classList.includes('undead'))
-      || (this.gamePlay.cells[index].firstChild.classList.includes('vampire')))) {
+      && ((this.gamePlay.cells[index].firstChild.classList.contains('daemon'))
+      || (this.gamePlay.cells[index].firstChild.classList.contains('undead'))
+      || (this.gamePlay.cells[index].firstChild.classList.contains('vampire')))) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, 'red');
       }
       if (!(cellsForMove.includes(index) || cellsForAttack.includes(index))) {
         this.gamePlay.setCursor(cursors.notallowed);
+      }
+      if (this.gamePlay.cells[index].firstChild !== null
+        && (this.gamePlay.cells[index].firstChild.classList.contains('bowman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('swordsman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('magician'))) {
+        this.gamePlay.setCursor(cursors.pointer);
       }
     }
   }
@@ -123,17 +127,19 @@ export default class GameController {
     if (this.gamePlay.cells[index].classList.contains('selected-green')) {
       this.gamePlay.cells[index].classList.remove('selected-green');
     }
+    if (this.gamePlay.cells[index].classList.contains('selected-red')) {
+      this.gamePlay.cells[index].classList.remove('selected-red');
+    }
   }
 
   move(index) {
-    const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected'));
+    const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected-yellow'));
     const i = this.gamePlay.cells.indexOf(selectedCell);
     const character = this.teams.find((el) => el.position === i);
     const possibleSteps = cellDeterminer(character.position, character.character.stepDistance, this.gamePlay.cells);
     if (possibleSteps.includes(index)) {
       character.position = index;
-      this.gamePlay.cells.forEach((cell) => cell.classList.remove(...Array.from(cell.classList)
-        .filter((o) => o.startsWith('selected'))));
+      this.gamePlay.deselectCell(i);
       this.gamePlay.redrawPositions(this.teams);
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
@@ -141,19 +147,31 @@ export default class GameController {
         this.gameState.activePlayer = 'computer';
       }
       this.gameState.selectedCharacter = 0;
+      this.gamePlay.deselectCell(index);
     }
   }
 
   attack(index) {
-    const character = this.gameState.selectedCharacter;
+    const selectedCell = this.gamePlay.cells.find((el) => el.classList.contains('selected-yellow'));
+    const i = this.gamePlay.cells.indexOf(selectedCell);
+    const character = this.teams.find((el) => el.position === i);
     const possibleAttacks = cellDeterminer(character.position, character.character.attackDistance, this.gamePlay.cells);
-    const target = this.gamePlay.cells[index];
+    const target = this.teams.find((el) => el.position === index);
     if (possibleAttacks.includes(target.position)) {
       const damage = Math.max(character.character.attack - target.character.defence, character.character.attack * 0.1);
       this.gamePlay.showDamage(index, damage);
       target.character.health -= damage;
-      // ?убедиться, что анимация идет до конца
-      this.checkDeath(target);
+      if (target.character.health <= 0) {
+        if (this.gameState.activePlayer === 'player') {
+          this.computerTeam = this.computerTeam.filter((el) => el.position !== target.position);
+        }
+        if (this.gameState.activePlayer === 'computer') {
+          this.playerTeam = this.playerTeam.filter((el) => el.position !== target.position);
+        }
+        this.teams = this.teams.filter((el) => el.position !== target.position);
+      }
+      this.gamePlay.cells.forEach((cell) => cell.classList.remove(...Array.from(cell.classList)
+        .filter((o) => o.startsWith('selected'))));
       this.gamePlay.redrawPositions(this.teams);
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
@@ -200,16 +218,17 @@ export default class GameController {
     }
   }
 
-  checkDeath(character) {
-    if (character.character.health <= 0) {
-      let cell = this.gamePlay.cells[character.position];
-      cell = document.createElement('div');
-      cell.classList.add('cell', 'map-tile', `map-tile-${calcTileType(character.position, this.boardSize)}`);
-      cell.addEventListener('mouseenter', (event) => this.onCellEnter(event));
-      cell.addEventListener('mouseleave', (event) => this.onCellLeave(event));
-      cell.addEventListener('click', (event) => this.onCellClick(event));
-    }
-  }
+  // видимо удалить
+  // checkDeath(character) {
+  //   if (character.character.health <= 0) {
+  //     let cell = this.gamePlay.cells[character.position];
+  //     cell = document.createElement('div');
+  //     cell.classList.add('cell', 'map-tile', `map-tile-${calcTileType(character.position, this.boardSize)}`);
+  //     cell.addEventListener('mouseenter', (event) => this.onCellEnter(event));
+  //     cell.addEventListener('mouseleave', (event) => this.onCellLeave(event));
+  //     cell.addEventListener('click', (event) => this.onCellClick(event));
+  //   }
+  // }
 
   endCheck() {
     if (this.playerTeam.length === 0) {
