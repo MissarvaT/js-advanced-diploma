@@ -218,18 +218,6 @@ export default class GameController {
     }
   }
 
-  // видимо удалить
-  // checkDeath(character) {
-  //   if (character.character.health <= 0) {
-  //     let cell = this.gamePlay.cells[character.position];
-  //     cell = document.createElement('div');
-  //     cell.classList.add('cell', 'map-tile', `map-tile-${calcTileType(character.position, this.boardSize)}`);
-  //     cell.addEventListener('mouseenter', (event) => this.onCellEnter(event));
-  //     cell.addEventListener('mouseleave', (event) => this.onCellLeave(event));
-  //     cell.addEventListener('click', (event) => this.onCellClick(event));
-  //   }
-  // }
-
   endCheck() {
     if (this.playerTeam.length === 0) {
       alert('Game over!');
@@ -274,7 +262,17 @@ export default class GameController {
   }
 
   onNewGameClick() {
-    this.init();
+    this.gamePlay.drawUi('prairie');
+    const computerTeam = generateTeam([Daemon, Undead, Vampire], 1, 2, this.gamePlay.cells);
+    this.computerTeam = computerTeam;
+    const playerTeam = generateTeam([Bowman, Swordsman], 1, 2, this.gamePlay.cells);
+    this.playerTeam = playerTeam;
+    this.teams = [...this.computerTeam, ...this.playerTeam];
+    this.gamePlay.redrawPositions(this.teams);
+
+    this.gameState.activePlayer = 'player';
+    this.gameState.selectedCharacter = 0;
+    this.gameState.level = 1;
   }
 
   onSaveGameClick() {
