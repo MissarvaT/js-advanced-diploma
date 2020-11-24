@@ -81,7 +81,6 @@ export default class GameController {
       || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
       this.attack(index);
     }
-    this.endCheck();
   }
 
   onCellEnter(index) {
@@ -141,14 +140,16 @@ export default class GameController {
       character.position = index;
       this.gamePlay.deselectCell(i);
       this.gamePlay.redrawPositions(this.teams);
+      this.gameState.selectedCharacter = 0;
+      this.gamePlay.deselectCell(index);
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {
         this.gameState.activePlayer = 'computer';
+        this.computerTurn();
       }
-      this.gameState.selectedCharacter = 0;
-      this.gamePlay.deselectCell(index);
     }
+    this.endCheck();
   }
 
   attack(index) {
@@ -173,21 +174,23 @@ export default class GameController {
       this.gamePlay.cells.forEach((cell) => cell.classList.remove(...Array.from(cell.classList)
         .filter((o) => o.startsWith('selected'))));
       this.gamePlay.redrawPositions(this.teams);
+      this.gameState.selectedCharacter = 0;
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {
         this.gameState.activePlayer = 'computer';
+        this.computerTurn();
       }
-      this.gameState.selectedCharacter = 0;
     }
+    this.endCheck();
   }
 
   computerTurn() {
     // сделать логику лучше, если успею
     function compareHealth(character1, character2) {
-      if (character1.health > character2.health) return -1;
-      if (character1.health === character2.health) return 0;
-      if (character1.health < character2.health) return 1;
+      if (character1.character.health > character2.character.health) return -1;
+      if (character1.character.health === character2.character.health) return 0;
+      if (character1.character.health < character2.character.health) return 1;
     }
     function getRandom(min, max) {
       min = Math.ceil(min);
@@ -196,25 +199,33 @@ export default class GameController {
     }
     this.computerTeam.sort(compareHealth);
     const activeCharacter = this.computerTeam[0];
-    this.gameState.selectedCharacter = activeCharacter;
+    const selectedCell = this.gamePlay.cells.find((cell) => this.gamePlay.cells.indexOf(cell) === activeCharacter.position);
+    this.gamePlay.selectCell(this.gamePlay.cells.indexOf(selectedCell));
     const { attackDistance } = activeCharacter.character;
     let indexes = cellDeterminer(activeCharacter.position, attackDistance, this.gamePlay.cells);
-    const cellsForAttack = [];
+    let cellsForAttack = [];
     indexes.forEach((index) => {
       cellsForAttack.push(this.gamePlay.cells[index]);
     });
-    cellsForAttack.filter((cell) => cell.character instanceof Swordsman || cell.character instanceof Bowman || cell.character instanceof Bowman);
-    if (cellsForAttack > 0) {
-      cellsForAttack.sort(compareHealth);
-      const characterForAttack = cellsForAttack[cellsForAttack.length];
+    cellsForAttack = cellsForAttack.filter((cell) => cell.firstChild !== null);
+    const charactersForAttack = [];
+    cellsForAttack.forEach((cell) => {
+      const character = this.teams.find((ch) => ch.position === this.gamePlay.cells.indexOf(cell));
+      if (character.character instanceof Swordsman || character.character instanceof Bowman || character.character instanceof Magician) {
+        charactersForAttack.push(character);
+      }
+    });
+    if (charactersForAttack.length > 0) {
+      charactersForAttack.sort(compareHealth);
+      const characterForAttack = charactersForAttack[charactersForAttack.length - 1];
       const { position } = characterForAttack;
       this.attack(position);
     }
-    if (cellsForAttack.length === 0) {
-      const { stepDistance } = activeCharacter;
+    if (charactersForAttack.length === 0) {
+      const { stepDistance } = activeCharacter.character;
       indexes = cellDeterminer(activeCharacter.position, stepDistance, this.gamePlay.cells);
       const index = getRandom(0, indexes.length);
-      this.move(index);
+      this.move(indexes[index]);
     }
   }
 
