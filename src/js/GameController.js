@@ -1,8 +1,8 @@
-/* eslint-disable no-alert */
 /* eslint-disable no-param-reassign */
 /* eslint-disable consistent-return */
 /* eslint-disable max-len */
 /* eslint-disable no-return-assign */
+import GamePlay from './GamePlay'
 import themes from './themes';
 import GameState from './GameState';
 import { generateTeam } from './generators';
@@ -69,7 +69,7 @@ export default class GameController {
       && (this.gamePlay.cells[index].firstChild.classList.contains('daemon')
       || this.gamePlay.cells[index].firstChild.classList.contains('undead')
       || this.gamePlay.cells[index].firstChild.classList.contains('vampire'))) {
-      alert('Невозможно выбрать персонажа!');
+      GamePlay.showError('Невозможно выбрать персонажа!');
     }
     else if (this.gameState.selectedCharacter !== 0 && this.gamePlay.cells[index].firstChild === null) {
       this.move(index);
@@ -89,6 +89,12 @@ export default class GameController {
     if (this.gamePlay.cells[index].firstChild !== null) {
       const { character } = positionedCharacter;
       this.gamePlay.showCellTooltip(`\u{1F396}${character.level}\u{2694}${character.attack}\u{1F6E1}${character.defence}\u{2764}${character.health}`, index);
+    }
+    if (this.gameState.selectedCharacter === 0 && this.gamePlay.cells[index].firstChild !== null
+      && (this.gamePlay.cells[index].firstChild.classList.contains('bowman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('swordsman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('magician'))) {
+      this.gamePlay.setCursor(cursors.pointer);
     }
 
     if (this.gameState.selectedCharacter !== 0) {
@@ -129,6 +135,12 @@ export default class GameController {
     if (this.gamePlay.cells[index].classList.contains('selected-red')) {
       this.gamePlay.cells[index].classList.remove('selected-red');
     }
+    if (this.gameState.selectedCharacter === 0 && this.gamePlay.cells[index].firstChild !== null
+      && (this.gamePlay.cells[index].firstChild.classList.contains('bowman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('swordsman')
+      || this.gamePlay.cells[index].firstChild.classList.contains('magician'))) {
+      this.gamePlay.setCursor(cursors.auto);
+    }
   }
 
   move(index) {
@@ -136,12 +148,13 @@ export default class GameController {
     const i = this.gamePlay.cells.indexOf(selectedCell);
     const character = this.teams.find((el) => el.position === i);
     const possibleSteps = cellDeterminer(character.position, character.character.stepDistance, this.gamePlay.cells);
-    if (possibleSteps.includes(index)) {
+    if (possibleSteps.includes(index) && this.gamePlay.cells[index].firstChild === null) {
       character.position = index;
       this.gamePlay.deselectCell(i);
       this.gamePlay.redrawPositions(this.teams);
       this.gameState.selectedCharacter = 0;
       this.gamePlay.deselectCell(index);
+      this.gamePlay.setCursor(cursors.auto);
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {
@@ -182,11 +195,11 @@ export default class GameController {
         this.computerTurn();
       }
     }
+    this.gamePlay.setCursor(cursors.auto);
     this.endCheck();
   }
 
   computerTurn() {
-    // сделать логику лучше, если успею
     function compareHealth(character1, character2) {
       if (character1.character.health > character2.character.health) return -1;
       if (character1.character.health === character2.character.health) return 0;
@@ -197,8 +210,15 @@ export default class GameController {
       max = Math.floor(max);
       return Math.floor(Math.random() * (max - min)) + min;
     }
-    this.computerTeam.sort(compareHealth);
-    const activeCharacter = this.computerTeam[0];
+    let activeCharacter;
+    if (this.computerTeam.length > 0) {
+      this.computerTeam.sort(compareHealth);
+      [activeCharacter] = this.computerTeam;
+    } else {
+      this.endCheck();
+      this.computerTeam.sort(compareHealth);
+      [activeCharacter] = this.computerTeam;
+    }
     const selectedCell = this.gamePlay.cells.find((cell) => this.gamePlay.cells.indexOf(cell) === activeCharacter.position);
     this.gamePlay.selectCell(this.gamePlay.cells.indexOf(selectedCell));
     const { attackDistance } = activeCharacter.character;
@@ -231,16 +251,16 @@ export default class GameController {
 
   endCheck() {
     if (this.playerTeam.length === 0) {
-      alert('Game over!');
+      GamePlay.showMessage('Game over!');
       this.gamePlay.cellClickListeners = [];
       this.gamePlay.cellEnterListeners = [];
       this.gamePlay.cellLeaveListeners = [];
     } else if (this.computerTeam.length === 0 && this.gameState.level < 4) {
-      alert('Congrats! You have won this level!');
+      GamePlay.showMessage('Congrats! You have won this level!');
       this.gameState.level += 1;
       this.gameLoop();
     } else if (this.computerTeam.length === 0 && this.gameState.level === 4) {
-      alert('Congrats! You have won the game!');
+      GamePlay.showMessage('Congrats! You have won the game!');
       if (this.playerScore > this.gameState.maxScore) {
         this.gameState.maxScore = this.playerScore;
       }
@@ -269,6 +289,28 @@ export default class GameController {
       this.playerTeam = [...this.playerTeam, ...newPlayerCharacters];
       this.computerTeam = generateTeam([Daemon, Undead, Vampire], 4, this.playerTeam.length, this.gamePlay.cells);
     }
+
+    const originalPlayersCells = [];
+    for (let i = 0; i < this.gamePlay.cells.length; i += 1) {
+      if (i % 8 === 0 || (i - 1) % 8 === 0) {
+        originalPlayersCells.push(i);
+      }
+    }
+    function getRandom(min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+    const newCharactersPositions = new Set();
+    while (newCharactersPositions.size < this.playerTeam.length) {
+      for (let i = 0; i < this.playerTeam.length; i += 1) {
+        const index = getRandom(0, originalPlayersCells.length);
+        this.playerTeam[i].position = originalPlayersCells[index];
+        newCharactersPositions.add(index);
+      }
+    }
+
+    this.teams = [...this.computerTeam, ...this.playerTeam];
     this.gamePlay.redrawPositions(this.teams);
   }
 

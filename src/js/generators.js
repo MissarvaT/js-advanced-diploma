@@ -36,6 +36,7 @@ export function generateTeam(allowedTypes, maxLevel, characterCount, field) {
     const character = generator.next();
     characters.push(character.value);
   }
+
   function getRandomCells() {
     const playersCellsIndexes = [];
 
