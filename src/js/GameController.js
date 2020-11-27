@@ -244,7 +244,10 @@ export default class GameController {
     if (charactersForAttack.length === 0) {
       const { stepDistance } = activeCharacter.character;
       indexes = cellDeterminer(activeCharacter.position, stepDistance, this.gamePlay.cells);
-      const index = getRandom(0, indexes.length);
+      let index = getRandom(0, indexes.length);
+      while (this.gamePlay.cells[indexes[index]].firstChild !== null) {
+        index = getRandom(0, indexes.length);
+      }
       this.move(indexes[index]);
     }
   }
@@ -260,6 +263,7 @@ export default class GameController {
       this.gameState.level += 1;
       this.gameLoop();
     } else if (this.computerTeam.length === 0 && this.gameState.level === 4) {
+      this.gameState.activePlayer = 0;
       GamePlay.showMessage('Congrats! You have won the game!');
       if (this.playerScore > this.gameState.maxScore) {
         this.gameState.maxScore = this.playerScore;
@@ -315,6 +319,11 @@ export default class GameController {
   }
 
   onNewGameClick() {
+    if (this.gamePlay.cellClickListeners === [] && this.gamePlay.cellEnterListeners === [] && this.gamePlay.cellLeaveListeners === []) {
+      this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+      this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+      this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    }
     this.gamePlay.drawUi('prairie');
     const computerTeam = generateTeam([Daemon, Undead, Vampire], 1, 2, this.gamePlay.cells);
     this.computerTeam = computerTeam;
