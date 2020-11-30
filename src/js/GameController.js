@@ -54,7 +54,6 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
-
     if (this.gamePlay.cells[index].firstChild !== null
       && (this.gamePlay.cells[index].firstChild.classList.contains('bowman')
       || this.gamePlay.cells[index].firstChild.classList.contains('swordsman')
@@ -158,11 +157,11 @@ export default class GameController {
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {
+        this.endCheck();
         this.gameState.activePlayer = 'computer';
         this.computerTurn();
       }
     }
-    this.endCheck();
   }
 
   attack(index) {
@@ -191,12 +190,14 @@ export default class GameController {
       if (this.gameState.activePlayer === 'computer') {
         this.gameState.activePlayer = 'player';
       } else if (this.gameState.activePlayer === 'player') {
-        this.gameState.activePlayer = 'computer';
-        this.computerTurn();
+        this.gamePlay.setCursor(cursors.auto);
+        this.endCheck();
+        if (this.computerTeam.length > 0) {
+          this.gameState.activePlayer = 'computer';
+          this.computerTurn();
+        }
       }
     }
-    this.gamePlay.setCursor(cursors.auto);
-    this.endCheck();
   }
 
   computerTurn() {
@@ -250,6 +251,7 @@ export default class GameController {
       }
       this.move(indexes[index]);
     }
+    this.endCheck();
   }
 
   endCheck() {
@@ -309,20 +311,27 @@ export default class GameController {
     while (newCharactersPositions.size < this.playerTeam.length) {
       for (let i = 0; i < this.playerTeam.length; i += 1) {
         const index = getRandom(0, originalPlayersCells.length);
-        this.playerTeam[i].position = originalPlayersCells[index];
-        newCharactersPositions.add(index);
+        newCharactersPositions.add(originalPlayersCells[index]);
+      }
+      for (let i = 0; i < this.playerTeam.length; i += 1) {
+        const newPositions = Array.from(newCharactersPositions);
+        this.playerTeam[i].position = newPositions[i];
       }
     }
-
     this.teams = [...this.computerTeam, ...this.playerTeam];
     this.gamePlay.redrawPositions(this.teams);
   }
 
   onNewGameClick() {
+    console.log(this.gamePlay.cellClickListeners);
+    console.log(this.gamePlay.cellClickListeners);
+    console.log(this.gamePlay.cellClickListeners);
+
     if (this.gamePlay.cellClickListeners === [] && this.gamePlay.cellEnterListeners === [] && this.gamePlay.cellLeaveListeners === []) {
-      this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
-      this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
-      this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+      console.log('it works')
+      this.gamePlay.addCellEnterListener(this.onCellEnter(this));
+      this.gamePlay.addCellClickListener(this.onCellClick(this));
+      this.gamePlay.addCellLeaveListener(this.onCellLeave(this));
     }
     this.gamePlay.drawUi('prairie');
     const computerTeam = generateTeam([Daemon, Undead, Vampire], 1, 2, this.gamePlay.cells);
