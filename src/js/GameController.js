@@ -323,15 +323,10 @@ export default class GameController {
   }
 
   onNewGameClick() {
-    console.log(this.gamePlay.cellClickListeners);
-    console.log(this.gamePlay.cellClickListeners);
-    console.log(this.gamePlay.cellClickListeners);
-
-    if (this.gamePlay.cellClickListeners === [] && this.gamePlay.cellEnterListeners === [] && this.gamePlay.cellLeaveListeners === []) {
-      console.log('it works')
-      this.gamePlay.addCellEnterListener(this.onCellEnter(this));
-      this.gamePlay.addCellClickListener(this.onCellClick(this));
-      this.gamePlay.addCellLeaveListener(this.onCellLeave(this));
+    if (this.gamePlay.cellClickListeners.length === 0 && this.gamePlay.cellEnterListeners.length === 0 && this.gamePlay.cellLeaveListeners.length === 0) {
+      this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+      this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+      this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     }
     this.gamePlay.drawUi('prairie');
     const computerTeam = generateTeam([Daemon, Undead, Vampire], 1, 2, this.gamePlay.cells);
@@ -347,10 +342,12 @@ export default class GameController {
   }
 
   onSaveGameClick() {
+    this.stateService.storage.removeItem('state');
     this.stateService.save(this.gameState);
   }
 
   onLoadGameClick() {
     this.gameState = GameState.from(this.stateService.load());
+
   }
 }
