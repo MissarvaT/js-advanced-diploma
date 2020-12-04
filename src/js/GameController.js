@@ -7,16 +7,13 @@ import themes from './themes';
 import GameState from './GameState';
 import { generateTeam } from './generators';
 import cursors from './cursors';
-import Character from './characters/Character';
 import Bowman from './characters/Bowman';
 import Daemon from './characters/Daemon';
 import Magician from './characters/Magician';
 import Swordsman from './characters/Swordsman';
 import Undead from './characters/Undead';
 import Vampire from './characters/Vampire';
-import { calcTileType } from './utils';
 import cellDeterminer from './cellDeterminer';
-import PositionedCharacter from './PositionedCharacter';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -342,12 +339,23 @@ export default class GameController {
   }
 
   onSaveGameClick() {
+    this.gameState.computerTeam = this.computerTeam;
+    this.gameState.playerTeam = this.playerTeam;
+    this.gameState.teams = this.teams;
+    this.gameState.playerScore = this.playerScore;
     this.stateService.storage.removeItem('state');
     this.stateService.save(this.gameState);
   }
 
   onLoadGameClick() {
     this.gameState = GameState.from(this.stateService.load());
+    this.computerTeam = this.gameState.computerTeam;
+    this.playerTeam = this.gameState.playerTeam;
+    this.teams = this.gameState.teams;
+    this.playerScore = this.gameState.playerScore;
 
+    const currentLevel = themes.find((theme) => theme.level === this.gameState.level);
+    this.gamePlay.drawUi(currentLevel.name);
+    this.gamePlay.redrawPositions(this.teams);
   }
 }
