@@ -5,24 +5,24 @@ export function calcTileType(index, boardSize) {
     if (index === 0) {
       return 'top-left';
     }
-    if (index === 7) {
+    if (index === boardSize - 1) {
       return 'top-right';
     }
-    if (index > 0 && index < 7) {
+    if (index > 0 && index < boardSize - 1) {
       return 'top';
     }
-    if (index === 56) {
+    if (index === boardSize ** 2 - boardSize) {
       return 'bottom-left';
     }
-    if (index === 63) {
+    if (index === boardSize ** 2 - 1) {
       return 'bottom-right';
-    } if (index > 56 && index < 63) {
+    } if (index > boardSize ** 2 - boardSize && index < boardSize ** 2 - 1) {
       return 'bottom';
     }
-    if (index % 8 === 0) {
+    if (index % boardSize === 0) {
       return 'left';
     }
-    if ((index + 1) % 8 === 0) {
+    if ((index + 1) % boardSize === 0) {
       return 'right';
     }
     return 'center';
